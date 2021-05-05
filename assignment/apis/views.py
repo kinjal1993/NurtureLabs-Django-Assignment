@@ -10,6 +10,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import User, Advisor
 from apis.serializers import UserSerializer, AdvisorSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class UserList(APIView):
     """
@@ -19,6 +21,30 @@ class UserList(APIView):
         users = User.objects.all()
         serializer = UserSerializer(users,many = True)
         return Response(serializer.data)
+
+    def register(self,request):
+        user_serializer = UserSerializer(data=request.data)
+        if user_serializer.is_valid():
+            user = user_serializer.save()
+            refresh = RefreshToken.for_user(user)
+            res = {
+                "token": str(refresh.access_token),
+                "id" : user.id
+            }
+            return Response(res, status=status.HTTP_201_CREATED)
+        else:
+            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def login(self,request):
+        email = data.get("email", None)
+        password = data.get("password", None)
+        res = {
+            "email" : email,
+            "password" : password
+        }
+        return Response(res, status=status.HTTP_200_OK)
+        
+
 
 
 class AdvisorList(APIView):
