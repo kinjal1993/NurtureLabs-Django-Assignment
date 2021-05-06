@@ -9,21 +9,20 @@ from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from .models import User, Advisor
-from apis.serializers import UserSerializer, AdvisorSerializer
-from rest_framework.permissions import IsAuthenticated
+from apis.serializers import AddAdvisorSerializer, RegisterUserSerializer, LoginUserSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework import generics
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate, login
 
-class UserList(APIView):
+class RegisterView(generics.CreateAPIView):
     """
-    API endpoint that allows users to be viewed or edited.
+    API endpoint that allows users to register.
     """
-    def get(self,request):
-        users = User.objects.all()
-        serializer = UserSerializer(users,many = True)
-        return Response(serializer.data)
 
-    def register(self,request):
-        user_serializer = UserSerializer(data=request.data)
+    serializer_class = RegisterUserSerializer
+    def post(self,request):
+        user_serializer = RegisterUserSerializer(data=request.data)
         if user_serializer.is_valid():
             user = user_serializer.save()
             refresh = RefreshToken.for_user(user)
@@ -35,33 +34,48 @@ class UserList(APIView):
         else:
             return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def login(self,request):
-        email = data.get("email", None)
-        password = data.get("password", None)
-        res = {
-            "email" : email,
-            "password" : password
-        }
-        return Response(res, status=status.HTTP_200_OK)
-        
+class LoginView(generics.CreateAPIView):
+    """
+    API endpoint that allows users to register.
+    """
+
+    serializer_class = LoginUserSerializer
+    queryset = User.objects.all()
+    def post(self,request):
+        user_serializer = LoginUserSerializer(data=request.data)
+        if user_serializer.is_valid():
+            #user = user_serializer.save()
+            
+            email = request.data.get('email')
+            password = request.data.get('password')
+            user = user_serializer.authenticate_user(email,password)
+            if user is not None:
+                refresh = RefreshToken.for_user(user)
+                res = {
+                    "token": str(refresh.access_token),
+                    "id" : user.id
+                }
+                return Response(res, status=status.HTTP_200_OK)
+            else:
+                return Response([], status=status.HTTP_401_UNAUTHORIZED)
+            
+        else:
+            return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-class AdvisorList(APIView):
+class AddAdvisorView(generics.CreateAPIView):
     parser_classes = (MultiPartParser, FormParser)
+    serializer_class = AddAdvisorSerializer
+    queryset = Advisor.objects.all()
     """
-    API endpoint that allows users to be viewed or edited.
+    API endpoint that allows to add advisors.
     """
-    def get(self,request):
-        advisors = Advisor.objects.all()
-        serializer = AdvisorSerializer(advisors,many = True)
-        return Response(serializer.data)
 
     def post(self,request):
-        file_serializer = AdvisorSerializer(data=request.data)
+        file_serializer = AddAdvisorSerializer(data=request.data)
         if file_serializer.is_valid():
             file_serializer.save()
-            return Response(file_serializer.data, status=status.HTTP_201_CREATED)
+            return Response([], status=status.HTTP_200_OK)
         else:
             return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

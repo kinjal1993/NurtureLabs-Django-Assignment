@@ -4,7 +4,7 @@ from .models import User,Advisor
 from django.core import exceptions
 import django.contrib.auth.password_validation as validators
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class RegisterUserSerializer(serializers.HyperlinkedModelSerializer):
 
     email = serializers.EmailField()
     def validate_email(self, value):
@@ -31,7 +31,22 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         model = User
         fields = ['id', 'name', 'email', 'password']
 
-class AdvisorSerializer(serializers.HyperlinkedModelSerializer):
+class LoginUserSerializer(serializers.HyperlinkedModelSerializer):
+
+    def authenticate_user(self,email,password):
+        try:
+            user = User.objects.get(email=email,password=password)
+            return user
+        except User.DoesNotExist:
+            return None
+        
+        return None
+
+    class Meta:
+        model = User
+        fields = ['email', 'password']
+
+class AddAdvisorSerializer(serializers.HyperlinkedModelSerializer):
     photo = ImageField()
     class Meta:
         model = Advisor
