@@ -1,19 +1,14 @@
-from django.shortcuts import render
+from datetime import datetime
 
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser, FormParser
 
-from .models import User, Advisor
-from apis.serializers import AddAdvisorSerializer, RegisterUserSerializer, LoginUserSerializer
+from .models import User, Advisor, Booking
+from apis.serializers import AdvisorSerializer, RegisterUserSerializer, LoginUserSerializer, BookingSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import generics
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import authenticate, login
 
 class RegisterView(generics.CreateAPIView):
     """
@@ -27,7 +22,8 @@ class RegisterView(generics.CreateAPIView):
             user = user_serializer.save()
             refresh = RefreshToken.for_user(user)
             res = {
-                "token": str(refresh.access_token),
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
                 "id" : user.id
             }
             return Response(res, status=status.HTTP_201_CREATED)
@@ -36,7 +32,7 @@ class RegisterView(generics.CreateAPIView):
 
 class LoginView(generics.CreateAPIView):
     """
-    API endpoint that allows users to register.
+    API endpoint that allows users to login.
     """
 
     serializer_class = LoginUserSerializer
@@ -44,15 +40,14 @@ class LoginView(generics.CreateAPIView):
     def post(self,request):
         user_serializer = LoginUserSerializer(data=request.data)
         if user_serializer.is_valid():
-            #user = user_serializer.save()
-            
             email = request.data.get('email')
             password = request.data.get('password')
             user = user_serializer.authenticate_user(email,password)
             if user is not None:
                 refresh = RefreshToken.for_user(user)
                 res = {
-                    "token": str(refresh.access_token),
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
                     "id" : user.id
                 }
                 return Response(res, status=status.HTTP_200_OK)
@@ -65,18 +60,91 @@ class LoginView(generics.CreateAPIView):
 
 class AddAdvisorView(generics.CreateAPIView):
     parser_classes = (MultiPartParser, FormParser)
-    serializer_class = AddAdvisorSerializer
+    serializer_class = AdvisorSerializer
     queryset = Advisor.objects.all()
     """
     API endpoint that allows to add advisors.
     """
 
     def post(self,request):
-        file_serializer = AddAdvisorSerializer(data=request.data)
+        file_serializer = AdvisorSerializer(data=request.data)
         if file_serializer.is_valid():
             file_serializer.save()
             return Response([], status=status.HTTP_200_OK)
         else:
             return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+class ListAdvisorView(generics.CreateAPIView):
+    #permission_classes = [IsAuthenticated]
+    serializer_class = AdvisorSerializer
+    queryset = Advisor.objects.all()
+    """
+    API endpoint that lists advisors.
+    """
+
+    def get(self,request, *args, **kwargs):
+        user_id=self.kwargs.get('user_id')
+        advisors = Advisor.objects.all()
+        serializer = AdvisorSerializer(advisors,many = True)
+        return Response(serializer.data)
+
+class AddBookingView(generics.CreateAPIView):
+    #permission_classes = [IsAuthenticated]
+    serializer_class = BookingSerializer
+    queryset = Booking.objects.all()
+    """
+    API endpoint that lists advisors.
+    """
+
+    def post(self,request, *args, **kwargs):
+        user_id=self.kwargs.get('user_id')
+        advisor_id=self.kwargs.get('advisor_id')
+        advisor = Advisor.objects.get(id=advisor_id)
+        user = User.objects.get(id=user_id)
+        
+        if user is not None and advisor is not None:
+            data = {
+               'user':user_id, 
+               'advisor':advisor_id, 
+               'booking_time':request.data.get('booking_time'), 
+            }
+            booking_serializer = BookingSerializer(data=data)
+            if booking_serializer.is_valid():
+                booking_serializer = booking_serializer.save()
+                return Response([], status=status.HTTP_200_OK)
+            else:
+                return Response(booking_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ListBookingView(generics.CreateAPIView):
+    #permission_classes = [IsAuthenticated]
+    serializer_class = BookingSerializer
+    queryset = Booking.objects.all()
+    """
+    API endpoint that lists advisors.
+    """
+
+    def get(self,request, *args, **kwargs):
+        user_id=self.kwargs.get('user_id')
+        user = User.objects.get(id=user_id)
+        bookings = user.bookings.all()
+        serializer = BookingSerializer(bookings,many = True)
+        booking_array = serializer.data
+        
+        res = []
+        for booking in bookings:
+            #advisor = Advisor.objects.get(id=booking.advisor)
+            advisor = AdvisorSerializer(booking.advisor)
+            # format date into dd/mm/yyyy
+            booking_time = booking.booking_time.strftime("%d/%m/%Y %H:%M:%S")
+            temp = {
+                'id' : booking.id,
+                'booking_time' : booking_time,
+                'advisor' : advisor.data
+            }
+            res.append(temp)
+        
+        return Response(res)
+
+            
 
        

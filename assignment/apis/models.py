@@ -16,3 +16,8 @@ class User(models.Model):
 
     def __str__(self):
         return self.name
+
+class Booking(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
+    advisor = models.ForeignKey(Advisor, on_delete=models.CASCADE)
+    booking_time = models.DateTimeField()

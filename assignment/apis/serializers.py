@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from rest_framework.serializers import Serializer, ImageField, EmailField
-from .models import User,Advisor
+from rest_framework.serializers import Serializer, ImageField, EmailField, DateTimeField
+from .models import User,Advisor,Booking
 from django.core import exceptions
 import django.contrib.auth.password_validation as validators
 
@@ -46,8 +46,18 @@ class LoginUserSerializer(serializers.HyperlinkedModelSerializer):
         model = User
         fields = ['email', 'password']
 
-class AddAdvisorSerializer(serializers.HyperlinkedModelSerializer):
+class AdvisorSerializer(serializers.HyperlinkedModelSerializer):
     photo = ImageField()
     class Meta:
         model = Advisor
-        fields = ['name', 'photo']
+        fields = ['id','name', 'photo']
+
+class BookingSerializer(serializers.ModelSerializer):
+    booking_time = DateTimeField()
+    advisor = serializers.PrimaryKeyRelatedField(queryset=Advisor.objects.all())
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    
+    class Meta:
+        model = Booking
+        fields = ['id','booking_time', 'advisor', 'user']
+
