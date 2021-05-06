@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'apis',
 ]
 
+AUTH_USER_MODEL = 'apis.User'
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -53,12 +55,14 @@ MIDDLEWARE = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    "DEFAULT_AUTHENTICATION_CLASSES": [                               # new
+        "rest_framework.authentication.SessionAuthentication",        # new
+        "rest_framework_simplejwt.authentication.JWTAuthentication",  # new 
+    ],
 }
 
 ROOT_URLCONF = 'assignment.urls'
+
 
 TEMPLATES = [
     {
@@ -109,8 +113,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=15),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=15),
-    'ROTATE_REFRESH_TOKENS': True,
 }
 
 # Internationalization

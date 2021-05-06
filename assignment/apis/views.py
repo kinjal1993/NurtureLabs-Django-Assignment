@@ -17,13 +17,14 @@ class RegisterView(generics.CreateAPIView):
 
     serializer_class = RegisterUserSerializer
     def post(self,request):
-        user_serializer = RegisterUserSerializer(data=request.data)
+        request_data = request.data
+        #request_data.is_active = True
+        user_serializer = RegisterUserSerializer(data=request_data)
         if user_serializer.is_valid():
             user = user_serializer.save()
             refresh = RefreshToken.for_user(user)
             res = {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
+                "token": str(refresh.access_token),
                 "id" : user.id
             }
             return Response(res, status=status.HTTP_201_CREATED)
@@ -44,10 +45,10 @@ class LoginView(generics.CreateAPIView):
             password = request.data.get('password')
             user = user_serializer.authenticate_user(email,password)
             if user is not None:
+                user.username = user.email
                 refresh = RefreshToken.for_user(user)
                 res = {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
+                    "token": str(refresh.access_token),
                     "id" : user.id
                 }
                 return Response(res, status=status.HTTP_200_OK)
@@ -75,7 +76,7 @@ class AddAdvisorView(generics.CreateAPIView):
             return Response(file_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
 class ListAdvisorView(generics.CreateAPIView):
-    #permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated, )
     serializer_class = AdvisorSerializer
     queryset = Advisor.objects.all()
     """
@@ -89,7 +90,7 @@ class ListAdvisorView(generics.CreateAPIView):
         return Response(serializer.data)
 
 class AddBookingView(generics.CreateAPIView):
-    #permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated, )
     serializer_class = BookingSerializer
     queryset = Booking.objects.all()
     """
@@ -103,20 +104,23 @@ class AddBookingView(generics.CreateAPIView):
         user = User.objects.get(id=user_id)
         
         if user is not None and advisor is not None:
+            booking_time = request.data.get('booking_time')
             data = {
-               'user':user_id, 
-               'advisor':advisor_id, 
-               'booking_time':request.data.get('booking_time'), 
+                'user':user_id, 
+                'advisor':advisor_id, 
+                'booking_time':booking_time, 
             }
+            
             booking_serializer = BookingSerializer(data=data)
-            if booking_serializer.is_valid():
-                booking_serializer = booking_serializer.save()
-                return Response([], status=status.HTTP_200_OK)
-            else:
-                return Response(booking_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            if booking_serializer.check_booking_time_available(advisor_id,booking_time):
+                if booking_serializer.is_valid():
+                    booking_serializer = booking_serializer.save()
+                    return Response([], status=status.HTTP_200_OK)
+                else:
+                    return Response(booking_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ListBookingView(generics.CreateAPIView):
-    #permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated, )
     serializer_class = BookingSerializer
     queryset = Booking.objects.all()
     """
@@ -125,23 +129,28 @@ class ListBookingView(generics.CreateAPIView):
 
     def get(self,request, *args, **kwargs):
         user_id=self.kwargs.get('user_id')
-        user = User.objects.get(id=user_id)
-        bookings = user.bookings.all()
-        serializer = BookingSerializer(bookings,many = True)
-        booking_array = serializer.data
-        
         res = []
-        for booking in bookings:
-            #advisor = Advisor.objects.get(id=booking.advisor)
-            advisor = AdvisorSerializer(booking.advisor)
-            # format date into dd/mm/yyyy
-            booking_time = booking.booking_time.strftime("%d/%m/%Y %H:%M:%S")
-            temp = {
-                'id' : booking.id,
-                'booking_time' : booking_time,
-                'advisor' : advisor.data
-            }
-            res.append(temp)
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            user = None
+        
+        if user is not None:
+            bookings = user.bookings.all()
+            serializer = BookingSerializer(bookings,many = True)
+            booking_array = serializer.data
+            
+            for booking in bookings:
+                #advisor = Advisor.objects.get(id=booking.advisor)
+                advisor = AdvisorSerializer(booking.advisor)
+                # format date into dd/mm/yyyy
+                booking_time = booking.booking_time.strftime("%d/%m/%Y %H:%M:%S")
+                temp = {
+                    'id' : booking.id,
+                    'booking_time' : booking_time,
+                    'advisor' : advisor.data
+                }
+                res.append(temp)
         
         return Response(res)
 
