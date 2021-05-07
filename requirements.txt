@@ -2,7 +2,6 @@ asgiref==3.3.4
 bcrypt==3.1.7
 beautifulsoup4==4.9.3
 blinker==1.4
-Brlapi==0.7.0
 cachetools==4.0.0
 camelcase==0.2
 certifi==2019.11.28
