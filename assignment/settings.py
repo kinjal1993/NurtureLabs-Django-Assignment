@@ -25,7 +25,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'jn&y4%q^1*^6si&@9chs#=sim3jvng(e!v97=*8f09q71ryes^'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['https://nurturelabs-django-assignment.herokuapp.com']
 
