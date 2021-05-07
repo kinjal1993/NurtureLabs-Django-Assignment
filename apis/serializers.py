@@ -5,7 +5,7 @@ from django.core import exceptions
 import django.contrib.auth.password_validation as validators
 from datetime import datetime
 
-class RegisterUserSerializer(serializers.HyperlinkedModelSerializer):
+class UserSerializer(serializers.HyperlinkedModelSerializer):
 
     email = serializers.EmailField()
     USERNAME_FIELD = 'email'
@@ -34,22 +34,6 @@ class RegisterUserSerializer(serializers.HyperlinkedModelSerializer):
         model = User
         fields = ['id', 'name', 'email', 'password']
 
-class LoginUserSerializer(serializers.HyperlinkedModelSerializer):
-
-    USERNAME_FIELD = 'email'
-
-    def authenticate_user(self,email,password):
-        try:
-            user = User.objects.get(email=email,password=password)
-            return user
-        except User.DoesNotExist:
-            return None
-        
-        return None
-
-    class Meta:
-        model = User
-        fields = ['email', 'password']
 
 class AdvisorSerializer(serializers.HyperlinkedModelSerializer):
     photo = ImageField()
@@ -66,7 +50,7 @@ class BookingSerializer(serializers.ModelSerializer):
         model = Booking
         fields = ['id','booking_time', 'advisor', 'user']
 
-    def validate_booking_time(self,value): # check if booking time is greater than today
+    def validate_booking_time(self,value): # check if booking time is greater than today & starts at a quarter of an hour
         input = value
         present = datetime.now()
         minutes = int(input.strftime("%M"))
@@ -78,11 +62,16 @@ class BookingSerializer(serializers.ModelSerializer):
             return value 
             
 
-    def check_booking_time_available(self,advisor_id,booking_time):
+    def check_booking_time_available(self,advisor_id,booking_time): # check if booking time is available
         advisor = Advisor.objects.get(id=advisor_id)
-        booking = advisor.booked_advisors.filter(booking_time=booking_time)
-        
-        if not booking:
-            return True
+         # check if advisor id valid
+        if advisor is not None:
+            # find all booking with advisor at the same booking time
+            booking = advisor.booked_advisors.filter(booking_time=booking_time)
+            if not booking:
+                return True
+            else:
+                raise serializers.ValidationError("Booking time is already booked!") # time already booked
+
         else:
-            raise serializers.ValidationError("Booking time is already booked!")
+            raise serializers.ValidationError("Advisor is not registered!") # if advisor id not valid

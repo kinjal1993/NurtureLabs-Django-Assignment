@@ -95,17 +95,6 @@ WSGI_APPLICATION = 'assignment.wsgi.application'
 #     }
 # }
 
-# DATABASES = {
-#  'default': {
-#      'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#      'NAME': 'assignment',
-#      'USER': 'user',
-#      'PASSWORD': 'user',
-#      'HOST': 'localhost',
-#      'PORT': '',  
-#  }
-# }
-
 DATABASES = {
  'default': {
      'ENGINE': 'django.db.backends.postgresql_psycopg2',

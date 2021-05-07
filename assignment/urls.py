@@ -3,16 +3,13 @@ from rest_framework import routers
 from rest_framework.urlpatterns import format_suffix_patterns
 from apis import views
 from django.contrib import admin
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-# Wire up our API using automatic URL routing.
-# Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    path('user/login/', views.LoginView.as_view()),
-    path('user/register/', views.RegisterView.as_view()),
-    path('admin/advisor/', views.AddAdvisorView.as_view()),
-    path('user/<int:user_id>/advisor/', views.ListAdvisorView.as_view()),
-    path('user/<int:user_id>/advisor/<int:advisor_id>/', views.AddBookingView.as_view()),
-    path('user/<int:user_id>/advisor/booking/', views.ListBookingView.as_view()),
-    path('admin/', admin.site.urls),
+    path('user/login/', views.UserView.as_view()), # login api - get
+    path('user/register/', views.UserView.as_view()), # register - post
+    path('admin/advisor/', views.AddAdvisorView.as_view()), # add advisor - post
+    path('user/<int:user_id>/advisor/', views.ListAdvisorView.as_view()), # list advisors - get
+    path('user/<int:user_id>/advisor/<int:advisor_id>/', views.BookingView.as_view()), # list bookings - get
+    path('user/<int:user_id>/advisor/booking/', views.BookingView.as_view()), # make booking - post
+    path('', views.init_view),
 ]
